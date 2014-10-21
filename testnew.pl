@@ -1,13 +1,19 @@
 #{{{
 # 要引入的包
 #{{{
-use Date::Manip;
+use DateTime;
 use Encode;
 #}}}
 # 定义日期 
 #{{{
-my $base_workweek=35;
-my $base_year = "2013";
+my $base_year = "2014";
+my $term_start_month = "9";
+my $term_start_day = "1";
+my $base_workweek;
+
+my $workweek =  DateTime->new( year => $base_year, month => $term_start_month, day => $term_start_day );
+my $base_workweek = $workweek->week;
+
 my $base_workyear=$base_year . "W";
 my @short_holidays = qw (0101 0405 0406 0407 0501 0502 0503 0602 0908 1001 1002 1003 1004 1005 1006 1007 );
 #}}}
@@ -193,19 +199,24 @@ my $cur_teacher;
 my $cur_class;
 my $cur_subject;
 my $in_hdays;
+my $curr_time; 
+
 foreach my $emt_line (@weeks_grades_subjects) {
-  $cur_week = $base_workweek + $week_number{@$emt_line[0]};
+  $cur_week = $week_number{@$emt_line[0]};
   while (($key,$value) = each $classes_lessons[@$emt_line[1]][$grade_number{@$emt_line[2]}] ) {
     $in_hdays = 0;
     $cur_day = $value;
-    $cur_time = $base_workyear . $cur_week . $cur_day; 
-    $t_date = ParseDateString($cur_time);
-    $t_date = UnixDate($t_date,"%Y%m%d");
+    $curr_time = DateTime->new(year => $base_year, month => $term_start_month, day => $term_start_day);
+    $curr_time->add(weeks => $cur_week, days => $cur_day );
+
+    $t_date = $curr_time->ymd;
+    $t_date =~ s/\-//g;
+
     # 跳过假期
     foreach my $hdays (@holidays) {
       if ($hdays == $t_date) {
-	$in_hdays = 1;
-	last;
+    	$in_hdays = 1;
+    	last;
       }
     };
     if ($in_hdays == 1) {

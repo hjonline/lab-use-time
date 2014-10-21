@@ -1,0 +1,61 @@
+Sub Macro2()
+'
+' Macro1 Macro
+' 宏在 07-10-10 由 hj 录制
+'
+' 作用是把文档中第一个表格的指定单元格内容复制到其他表格中
+
+' 设置四个数组，分别对应周数，班级，执教者，课题
+
+
+Dim week(1 To 100)
+Dim class(1 To 100)
+
+Dim title(1 To 100)
+
+WeekCellRaw = 1
+WeekCellColumn = 2
+ClassCellRaw = 1
+ClassCellColumn = 4
+
+TitleCellRaw = 1
+TitleCellColumn = 6
+
+
+
+For i = 1 To ActiveDocument.Tables.Count - 1
+  Set myTable = ActiveDocument.Tables(i)
+  Set week(i) = ActiveDocument.Range(myTable.Cell(WeekCellRaw, WeekCellColumn) _
+   .Range.Start, myTable.Cell(WeekCellRaw, WeekCellColumn).Range.End)
+  week(i).Copy
+    Set toTable = ActiveDocument.Tables(ActiveDocument.Tables.Count)
+  Set temp = ActiveDocument.Range(toTable.Cell(i, 1) _
+   .Range.Start, toTable.Cell(i, 1).Range.End)
+  temp.Paste
+  
+  Set myTable = ActiveDocument.Tables(i)
+  Set class(i) = ActiveDocument.Range(myTable.Cell(ClassCellRaw, ClassCellColumn) _
+   .Range.Start, myTable.Cell(ClassCellRaw, ClassCellColumn).Range.End)
+  class(i).Copy
+    Set toTable = ActiveDocument.Tables(ActiveDocument.Tables.Count)
+  Set temp = ActiveDocument.Range(toTable.Cell(i, 2) _
+   .Range.Start, toTable.Cell(i, 2).Range.End)
+  temp.Paste
+  
+  
+  Set myTable = ActiveDocument.Tables(i)
+  Set title(i) = ActiveDocument.Range(myTable.Cell(TitleCellRaw, TitleCellColumn) _
+   .Range.Start, myTable.Cell(TitleCellRaw, TitleCellColumn).Range.End)
+  title(i).Copy
+    Set toTable = ActiveDocument.Tables(ActiveDocument.Tables.Count)
+  Set temp = ActiveDocument.Range(toTable.Cell(i, 4) _
+   .Range.Start, toTable.Cell(i, 4).Range.End)
+  temp.Paste
+Next
+
+
+
+
+End Sub
+
+
