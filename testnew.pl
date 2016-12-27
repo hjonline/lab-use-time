@@ -6,10 +6,10 @@ use Encode;
 #}}}
 # 定义日期 
 #{{{
-my $base_workweek=35;
+my $base_workweek=36;
 my $base_year = "2016";
 my $base_workyear=$base_year . "W";
-my @short_holidays = qw (0101 0405 0406 0407 0501 0502 0503 0602 0831 0901 0903 0904 0905 0908 1001 1002 1003 1004 1005 1006 1007 );
+my @short_holidays = qw (0101 0405 0406 0407 0501 0502 0503 0602 0825 0826 0827 0828 0829 0830 0831 0901 0903 0904 0905 0908 1001 1002 1003 1004 1005 1006 1007 );
 #}}}
 my @classes_teachers;
 #{{{
