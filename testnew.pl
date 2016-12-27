@@ -232,7 +232,7 @@ my $cur_subject;
 my $in_hdays;
 foreach my $emt_line (@weeks_grades_subjects) {
   $cur_week = $base_workweek + $week_number{@$emt_line[0]};
-  while (($key,$value) = each $classes_lessons[@$emt_line[1]][$grade_number{@$emt_line[2]}] ) {
+  while (($key,$value) = each %{$classes_lessons[$half_week{@$emt_line[1]}][$grade_number{@$emt_line[2]}]} ) {
     $in_hdays = 0;
     $cur_day = $value;
     $cur_time = $base_workyear . $cur_week . $cur_day; 
@@ -241,8 +241,8 @@ foreach my $emt_line (@weeks_grades_subjects) {
     # Ìø¹ý¼ÙÆÚ
     foreach my $hdays (@holidays) {
       if ($hdays == $t_date) {
-	$in_hdays = 1;
-	last;
+  	$in_hdays = 1;
+  	last;
       }
     };
     if ($in_hdays == 1) {
