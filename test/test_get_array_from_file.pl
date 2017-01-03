@@ -80,7 +80,9 @@ print $class_week[0][0][4] . "\n";
 foreach my $i (@class_week) {
   foreach my $j (@{$i}) {
     foreach my $k (@{$j}) {
-      print $k . "\n";
+      if ($k) {
+	print $k . "\n";
+      }
     }
   }
 }
