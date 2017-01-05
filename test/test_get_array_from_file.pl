@@ -1,6 +1,7 @@
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
 use ChineseNumbersU8;
+use Date::Manip;
 use Encode;
 
 my $settings_file = "$Bin/../config/" . "g-1.ini";
@@ -55,6 +56,7 @@ while (<TEMP>) {
 	$error_message = encode("gb2312",decode("utf8","的格式不正确"));
 	die "$temp_struct_name $error_message";
       }
+      next;
     }
     # 读取教师安排表
     if ( $temp_struct_name =~ /(class_teachers)_(\d+)/ ) {
@@ -68,10 +70,13 @@ while (<TEMP>) {
 	$error_message = encode("gb2312",decode("utf8","的格式不正确"));
 	die "$temp_struct_name $error_message";
       }
+      next;
     }
+    # 普通 hash ，不需要把几个 hash 合在一个大的数组中
+    ${$temp_struct_name}{$temp_lines[0]} = $temp_lines[1];
   }
   # 不是哈希，就是数组
-    push (@{$temp_struct_name}, $_);
+  push (@{$temp_struct_name}, $_);
 }
 close TEMP;
 
@@ -156,6 +161,51 @@ while ($temp_count_in_while_i <= $temp_sum_elements_grades) {
   $temp_count_in_while_i ++;  
 }
 
+# 对节假日的计算，有一个讨厌的事情是，开学的第一天，如果不是一周的周一，那么，开学日的前几天，应该也作为假日，添加到节假日表里
+# 这样，设定节假日时，只要给出开学日和非公历的假日，比如清明节，中秋节，其它公历的假日，固定的开学日都不用去改了，并且非固定的
+# 假日，应该在前面加注释
+# 测试开学日前加假日
+my $first_day_year;
+my $first_day_month;
+my $first_day_day;
+my $first_day_first = "1";
+ 
+$_ = @first_day[0];
+if (/(\d\d\d\d)(\d\d)(\d\d)/) {
+  $first_day_year = $1;
+  $first_day_month = $2;
+  $first_day_day = $3;
+}
+
+my $base_workweek=&Date_WeekOfYear($first_day_month, $first_day_day, $first_day_year, $first_day_first);
+my $base_year = $first_day_year;
+my $base_workyear = $base_year . "W";
+
+print $base_workweek . "\n";
+
+
+my $first_day_week = &Date_DayOfWeek($first_day_month, $first_day_day, $first_day_year, $first_day_first);
+print $first_day_week . "\n";
+
+foreach my $hdays (@holidays) {
+  $hdays = $base_year . $hdays;
+}
+
+my $hday;
+for (my $i = 1;$i < $first_day_week; $i ++) {
+  $hday = DateCalc($first_day[0],"-" . $i . "days");
+  $hday = s/00:00:00//;
+  push @holidays, $hday;
+}
+
+foreach my $hdays (@holidays) {
+  print $hdays . "\n";
+}
+
+
+# 对形如 “第XX周” 的数据，可以用正则表达式圈出 “第” 和 “周” 中间的中文数字，转阿拉伯数字，不用 hash 来对应了。
+
+# 测试程序
 foreach my $i (@gap_of_week) {
   foreach my $j (@{$i}) {
     if ($j) {
@@ -167,6 +217,17 @@ foreach my $i (@gap_of_week) {
   }
 }
 
+while ( ($key, $value) = each %grade_number ) {
+  $key = encode("gb2312",decode("utf8",$key));
+  print "$key => $value\n";
+}
+
+
+# 现在需要再构建两个数组，一个数组是指针，指向 gap_of_week 中下一个需要添加的间隔
+# 另一个数组，是把每次添加的间隔值都累加起来，这样后续的日期只要加上这个间隔的累加值就行了
+# 这两个数组的结构都是 $数组名[年级][班级]
+
+# 按周课时安排最后还是要排序的。
 
 # foreach my $i (@class_week[0]) {
 #   foreach my $j (@{$i}) {
