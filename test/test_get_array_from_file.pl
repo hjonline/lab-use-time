@@ -77,15 +77,110 @@ close TEMP;
 
 print $class_week[0][0][4] . "\n";
 
-foreach my $i (@class_week) {
-  foreach my $j (@{$i}) {
-    foreach my $k (@{$j}) {
-      if ($k) {
-	print $k . "\n";
+# 现在我们要建立一个数组，用来保存两次课之间的间隔
+# 结构是这样的[年级][班级] = {间隔1，间隔2，...最后间隔}
+# 间隔数的循环次数，是 @class_week 的第一层的元素个数，因为这是课的次数
+# @class_week 的结构，[课时数][年级][班级] = 上课日期
+# 那么，如果一个星期一节课的话，间隔数组就是 { 7 - 这周的上课日期 + 下周的上课日期 } ，就这一个元素，其实就是 7，因为两个日期一样。
+# 一个星期两节课的话，{ 这周第二节课日期 - 这周第一节课日期，7 - 这周第二节课日期 + 下周的第一节课日期 }
+# 一个星期三节课的话，{ 这周第二节课日期 - 这周第一节课日期，这周第三节课日期 - 这周第二节课日期，7 - 这周第三节课日期 + 下周的第一节课日期 }
+# 所以，需要借助一个辅助数组，用来保存前一次课的日期，每次做完计算后，更新为这一次的日期
+# 循环开始时，是不用计算的，要跳过
+# 循环到最后一节课的日期时，要改一下计算公式。
+
+my @gap_of_week;
+my @prev_day;
+
+# 因为每一次课时里，班级的个数都是一样的，所以只要选取 @class_work 的第一层的第一个元素，就得到全部的班级表
+my $temp_count_in_while_i;
+my $temp_count_in_while_j;
+my $temp_count_in_while_k;
+
+# 还要一个变量来记录有几个年级，一个数组来记录每个年级的班级数，那那个年级变量就不要了
+my $temp_sum_elements_grades;
+my @temp_sum_elements_classes;
+
+$temp_count_in_while_i = 0;
+while ($class_week[$temp_count_in_while_i]) {
+  $temp_count_in_while_j = 0;
+  while ($class_week[$temp_count_in_while_i][$temp_count_in_while_j]) {
+    $temp_count_in_while_k = 0;
+    foreach $i (@{$class_week[$temp_count_in_while_i][$temp_count_in_while_j]}) {
+      $temp_count_in_while_k ++;
+    }
+    $temp_sum_elements_classes[$temp_count_in_while_j] = $temp_count_in_while_k;
+    $temp_count_in_while_j ++;
+  }
+  $temp_count_in_while_i ++;
+}
+  
+$temp_sum_elements_grades = $#temp_sum_elements_classes;
+print $temp_sum_elements_grades  . "\n";
+foreach my $i (@temp_sum_elements_classes) {
+  print $i . "\n";
+}
+$temp_sum_elements = $#class_week;
+print $temp_sum_elements . "\n";
+
+# 这里第一层是年级数
+$temp_count_in_while_i = 0;
+while ($temp_count_in_while_i <= $temp_sum_elements_grades) {
+  # 这里第二层是班级数
+  $temp_count_in_while_j = 0;
+  while ($temp_count_in_while_j <= $temp_sum_elements_classes[$temp_count_in_while_i]) {
+    if ($class_week[0][$temp_count_in_while_i][$temp_count_in_while_j]) {
+      $temp_count_in_while_k = 0;
+      while ($temp_count_in_while_k <= $temp_sum_elements + 1) {
+	if ($temp_count_in_while_k == 0) {
+	  $prev_day[$temp_count_in_while_i][$temp_count_in_while_j] 
+	    = $class_week[0][$temp_count_in_while_i][$temp_count_in_while_j];
+	  $temp_count_in_while_k ++;
+	  next;
+	}
+	if ($temp_count_in_while_k == $temp_sum_elements + 1) {
+	  push @{$gap_of_week[$temp_count_in_while_i][$temp_count_in_while_j]},
+	    7 - $class_week[$temp_sum_elements][$temp_count_in_while_i][$temp_count_in_while_j]
+	    + $class_week[0][$temp_count_in_while_i][$temp_count_in_while_j];
+	  $temp_count_in_while_k ++;
+	  next;
+	}
+	push @{$gap_of_week[$temp_count_in_while_i][$temp_count_in_while_j]},
+	  $class_week[$temp_count_in_while_k][$temp_count_in_while_i][$temp_count_in_while_j]
+	  - $prev_day[$temp_count_in_while_i][$temp_count_in_while_j];
+	$temp_count_in_while_k ++;
+	next;
       }
     }
+    $temp_count_in_while_j ++;
+  }
+  $temp_count_in_while_i ++;  
+}
+
+foreach my $i (@gap_of_week) {
+  foreach my $j (@{$i}) {
+    if ($j) {
+      foreach my $k (@{$j}) {
+	print $k;
+      }
+    }
+    print "\n";
   }
 }
+
+
+# foreach my $i (@class_week[0]) {
+#   foreach my $j (@{$i}) {
+#     if ($j) {
+#       $temp_count_in_while = 0;
+#       while ($temp_count_in_while <= $#class_week) {
+# 	if ($temp_count_in_while == 0) {
+# 	  $prev_day[$]
+# 	}
+#       print $k . "\n";
+#       }
+#     }
+#   }
+# }
 
 #print $#{$class_teachers[0]} . "\n";
 
