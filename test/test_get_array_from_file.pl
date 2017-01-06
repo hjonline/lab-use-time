@@ -187,14 +187,11 @@ print $base_workweek . "\n";
 my $first_day_week = &Date_DayOfWeek($first_day_month, $first_day_day, $first_day_year, $first_day_first);
 print $first_day_week . "\n";
 
-foreach my $hdays (@holidays) {
-  $hdays = $base_year . $hdays;
-}
-
 my $hday;
 for (my $i = 1;$i < $first_day_week; $i ++) {
   $hday = DateCalc($first_day[0],"-" . $i . "days");
   $hday = s/00:00:00//;
+  print $hday . "\n";
   push @holidays, $hday;
 }
 
