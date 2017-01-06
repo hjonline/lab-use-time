@@ -5,13 +5,17 @@ use Date::Manip;
 use Encode;
 
 my $settings_file = "$Bin/../config/" . "g-1.ini";
+my $temp_result_1 = "$Bin/../result/" . "temp_result_1.txt";
+my $temp_result_2 = "$Bin/../result/" . "temp_result_2.txt";
+
 #  @class_teachers; # 隐藏的，在读取配置文件时，从节名生成
 #  @class_week;     # 隐藏的，在读取配置文件时，从节名生成
 
 # 定义一些到处可用的临时变量
 my @temp_lines;
 my $temp_struct_name;
-my $temp_array;
+my $temp_array_1;
+my $temp_array_2;
 my $temp_count_in_while;
 my $error_message;
 
@@ -127,6 +131,7 @@ foreach my $i (@temp_sum_elements_classes) {
 $temp_sum_elements = $#class_week;
 # print $temp_sum_elements . "\n";
 
+# 计算固定的日期差
 # 这里第一层是年级数
 $temp_count_in_while_i = 0;
 while ($temp_count_in_while_i <= $temp_sum_elements_grades) {
@@ -229,10 +234,6 @@ my $cur_gap;
 my $cur_grade_final;
 my $cur_class_final;
 
-my $cur_time;
-my $t_date;
-my $cur_teacher;
-my $cur_subject;
 foreach my $emt_line (@weeks_grades_subjects) {
   @temp_lines = split " ",$emt_line;
   # print "emt_line $temp_lines[0]\n";
@@ -279,22 +280,22 @@ foreach my $emt_line (@weeks_grades_subjects) {
 	$in_hdays = 0;
 	foreach my $temp_hday (@holidays) {
 	  if ($cur_day eq $temp_hday) {
-	    $cur_gap = $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn];
+	    $cur_gap = $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn];
 	    # 指向 gap 数组的指针，在小于 class_week 的总数时，都是递增 1
 	    # 但是在等于总数时，要归零。
-	    $all_gaps[$cur_grade][$cur_class][cur_class_in_week_turn]
-	      = $all_gaps[$cur_grade][$cur_class][cur_class_in_week_turn]
-	      + $gap_of_week[$cur_grade][$cur_class][$cur_gap][cur_class_in_week_turn];
+	    $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]
+	      = $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]
+	      + $gap_of_week[$cur_grade][$cur_class][$cur_gap][$cur_class_in_week_turn];
 	    $cur_day = DateCalc($cur_day, "+$gap_of_week[$cur_grade][$cur_class][$cur_gap] days");
 	    $cur_day =~ s/00:00:00//;
 	    $in_hdays = 1;
 	    # print "in holiday cur_grade $cur_grade cur_lass $cur_class $cur_day\n";
 	    # print "gap point $cur_gap\n";
 	    # print "all gaps in $all_gaps[$cur_grade][$cur_class]\n";
-	    if ($point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] < $#class_week) {
-	      $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] ++;
+	    if ($point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] < $#class_week) {
+	      $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] ++;
 	    } else {
-	      $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] = 0;
+	      $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] = 0;
 	    }
 	  }
 	}
@@ -306,7 +307,7 @@ foreach my $emt_line (@weeks_grades_subjects) {
     $cur_grade_final = ChineseNumbers->EnglishToChineseNumber($cur_grade + 1, "simp");
     $cur_class_final = $cur_class +1;
     #现在可以打印日期 班级 教师 课题 效果 损坏
-    print "$cur_day  $cur_grade_final（$cur_class_final）$class_teachers[$cur_grade][$cur_class]  $temp_lines[3] 好 无\n"; 
+    push @temp_array_1, "$cur_day    $cur_grade_final（$cur_class_final）    $class_teachers[$cur_grade][$cur_class]    $temp_lines[3]    好    无"; 
 
     }
     $cur_class ++;
@@ -314,6 +315,11 @@ foreach my $emt_line (@weeks_grades_subjects) {
   }
 }
 
+@temp_array_2 = sort (@temp_array_1);
+
+foreach my $tmp (@temp_array_2) {
+  print $tmp . "\n";
+}
 # foreach my $hdays (@holidays) {
 #   print $hdays . "\n";
 # }
