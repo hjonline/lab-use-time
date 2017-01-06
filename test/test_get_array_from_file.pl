@@ -80,7 +80,7 @@ while (<TEMP>) {
 }
 close TEMP;
 
-print $class_week[0][0][4] . "\n";
+# print $class_week[0][0][4] . "\n";
 
 # 现在我们要建立一个数组，用来保存两次课之间的间隔
 # 结构是这样的[年级][班级] = {间隔1，间隔2，...最后间隔}
@@ -120,12 +120,12 @@ while ($class_week[$temp_count_in_while_i]) {
 }
   
 $temp_sum_elements_grades = $#temp_sum_elements_classes;
-print $temp_sum_elements_grades  . "\n";
+# print $temp_sum_elements_grades  . "\n";
 foreach my $i (@temp_sum_elements_classes) {
-  print $i . "\n";
+  # print $i . "\n";
 }
 $temp_sum_elements = $#class_week;
-print $temp_sum_elements . "\n";
+# print $temp_sum_elements . "\n";
 
 # 这里第一层是年级数
 $temp_count_in_while_i = 0;
@@ -181,48 +181,163 @@ my $base_workweek=&Date_WeekOfYear($first_day_month, $first_day_day, $first_day_
 my $base_year = $first_day_year;
 my $base_workyear = $base_year . "W";
 
-print $base_workweek . "\n";
+# print $base_workweek . "\n";
 
 
 my $first_day_week = &Date_DayOfWeek($first_day_month, $first_day_day, $first_day_year, $first_day_first);
-print $first_day_week . "\n";
+# print $first_day_week . "\n";
 
+# 排除开学日这一周中，开学日前的日期
 my $hday;
 for (my $i = 1;$i < $first_day_week; $i ++) {
-  $hday = DateCalc($first_day[0],"-" . $i . "days");
-  $hday = s/00:00:00//;
-  print $hday . "\n";
+  $hday = DateCalc($first_day[0],"-$i days");
+  $hday =~ s/00:00:00//;
   push @holidays, $hday;
 }
-
-foreach my $hdays (@holidays) {
-  print $hdays . "\n";
-}
-
-
-# 对形如 “第XX周” 的数据，可以用正则表达式圈出 “第” 和 “周” 中间的中文数字，转阿拉伯数字，不用 hash 来对应了。
-
-# 测试程序
-foreach my $i (@gap_of_week) {
-  foreach my $j (@{$i}) {
-    if ($j) {
-      foreach my $k (@{$j}) {
-	print $k;
-      }
-    }
-    print "\n";
-  }
-}
-
-while ( ($key, $value) = each %grade_number ) {
-  $key = encode("gb2312",decode("utf8",$key));
-  print "$key => $value\n";
-}
-
 
 # 现在需要再构建两个数组，一个数组是指针，指向 gap_of_week 中下一个需要添加的间隔
 # 另一个数组，是把每次添加的间隔值都累加起来，这样后续的日期只要加上这个间隔的累加值就行了
 # 这两个数组的结构都是 $数组名[年级][班级]
+my @all_gaps;
+my @point_2_gap_of_week;
+
+# 先要初始化一下 @all_gaps
+# print "sum grade $temp_sum_elements_grades \n";
+for (my $i = 0; $i <= $temp_sum_elements_grades; $i ++){
+  # print "sum class $temp_sum_elements_classes[$i]\n";
+  for (my $j = 0; $j <= $temp_sum_elements_classes[$i]; $j++) {
+    # print "all_gaps_out $all_gaps[$i][$j]\n";
+    for (my $k = 0; $k <=$#class_week; $k++ ) {
+      if ($class_week[0][$i][$j]) {
+	$all_gaps[$i][$j][$k] = 0;
+	$point_2_gap_of_week[$i][$j][$k] = $k;
+	# print "grade $i class $j turn $k $point_2_gap_of_week[$i][$j][$k]\n";
+      }
+    }
+  }
+}
+
+
+# 测试程序
+my $cur_week;
+my $cur_grade;
+my $cur_class_in_week_turn;
+my $cur_class;
+my $cur_day;
+my $in_hdays;
+my $cur_gap;
+my $cur_grade_final;
+my $cur_class_final;
+
+my $cur_time;
+my $t_date;
+my $cur_teacher;
+my $cur_subject;
+foreach my $emt_line (@weeks_grades_subjects) {
+  @temp_lines = split " ",$emt_line;
+  # print "emt_line $temp_lines[0]\n";
+  if ($temp_lines[0] =~ /第(.*)周/) {
+    # print "found match\n";
+    # print $1 . "\n";
+    $cur_week = $base_workweek + ChineseNumbers->ChineseToEnglishNumber($1, "arabic") - 1;
+  }
+  # print $cur_week . "\n";
+
+  # 确定年级
+  $cur_grade = ChineseNumbers->ChineseToEnglishNumber($temp_lines[2], "arabic") - 1;
+  $cur_class_in_week_turn = $temp_lines[1] -1;
+  # print "class turn $cur_class_in_week_turn\n";
+
+  # print "cur_grade is $cur_grade \n";
+  # print "turn is $cur_class_in_week_turn\n";
+  # 从 @temp_sum_elements_classes 的结构中可以知道，它就是说明 0-4 个年级中，每个年级有几个班级的
+  # 所以，给定年级num ，就是 $temp_sum_elements_classes[num] ，就知道班级数
+  # 所以设定一个 $temp_sum_elements_classes[num] 次的循环，跳过空的班级，有的班级，加上年级号，就可以从
+  # @class_week[$cur_class_in_week_turn][cur_grade][$cur_class] 中取得上课日期
+
+  $cur_class = 0;
+  while ($cur_class <= $temp_sum_elements_classes[$cur_grade] -1 ) {
+    
+    my $temp_class_day;
+    if ($class_week[$cur_class_in_week_turn][$cur_grade][$cur_class]) {
+      # 求出初步结果
+      $temp_class_day = $class_week[$cur_class_in_week_turn][$cur_grade][$cur_class];
+      # print "grade $cur_grade class $cur_class temp_class_day $temp_class_day\n";
+
+      $cur_day = $base_workyear . $cur_week . $temp_class_day;
+      $cur_day = ParseDateString($cur_day);
+      $cur_day = UnixDate($cur_day,"%Y%m%d");
+      # 首先要加上原有的延迟
+      # print "all_gap $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]\n";
+      $cur_day = DateCalc($cur_day, "+$all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn] days");
+      $cur_day =~ s/00:00:00//;
+      # print "cur_day $cur_day\n";
+
+      # 预设有延迟的标志，强制进入判断是否延迟的循环
+      $in_hdays = 1;
+      while ($in_hdays) {
+	$in_hdays = 0;
+	foreach my $temp_hday (@holidays) {
+	  if ($cur_day eq $temp_hday) {
+	    $cur_gap = $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn];
+	    # 指向 gap 数组的指针，在小于 class_week 的总数时，都是递增 1
+	    # 但是在等于总数时，要归零。
+	    $all_gaps[$cur_grade][$cur_class][cur_class_in_week_turn]
+	      = $all_gaps[$cur_grade][$cur_class][cur_class_in_week_turn]
+	      + $gap_of_week[$cur_grade][$cur_class][$cur_gap][cur_class_in_week_turn];
+	    $cur_day = DateCalc($cur_day, "+$gap_of_week[$cur_grade][$cur_class][$cur_gap] days");
+	    $cur_day =~ s/00:00:00//;
+	    $in_hdays = 1;
+	    # print "in holiday cur_grade $cur_grade cur_lass $cur_class $cur_day\n";
+	    # print "gap point $cur_gap\n";
+	    # print "all gaps in $all_gaps[$cur_grade][$cur_class]\n";
+	    if ($point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] < $#class_week) {
+	      $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] ++;
+	    } else {
+	      $point_2_gap_of_week[$cur_grade][$cur_class][cur_class_in_week_turn] = 0;
+	    }
+	  }
+	}
+      }
+      # 最后看看是不是交换上课日期的情况
+      if (exists $exchange_holidays{$cur_day}) {
+	$cur_day = $exchange_holidays{$cur_day};
+      }
+    $cur_grade_final = ChineseNumbers->EnglishToChineseNumber($cur_grade + 1, "simp");
+    $cur_class_final = $cur_class +1;
+    #现在可以打印日期 班级 教师 课题 效果 损坏
+    print "$cur_day  $cur_grade_final（$cur_class_final）$class_teachers[$cur_grade][$cur_class]  $temp_lines[3] 好 无\n"; 
+
+    }
+    $cur_class ++;
+
+  }
+}
+
+# foreach my $hdays (@holidays) {
+#   print $hdays . "\n";
+# }
+
+
+# # 对形如 “第XX周” 的数据，可以用正则表达式圈出 “第” 和 “周” 中间的中文数字，转阿拉伯数字，不用 hash 来对应了。
+
+# foreach my $i (@gap_of_week) {
+#   foreach my $j (@{$i}) {
+#     if ($j) {
+#       foreach my $k (@{$j}) {
+# 	print $k;
+#       }
+#     }
+#     print "\n";
+#   }
+# }
+
+# while ( ($key, $value) = each %grade_number ) {
+#   $key = encode("gb2312",decode("utf8",$key));
+#   print "$key => $value\n";
+# }
+
+
 
 # 按周课时安排最后还是要排序的。
 
