@@ -18,6 +18,7 @@ my $temp_array_1;
 my $temp_array_2;
 my $temp_count_in_while;
 my $error_message;
+my @lesson_per_week;
 
 open ( TEMP, "<$settings_file" ) 
   or die "Can't open \"$settings_file\" due to $! \n";
@@ -55,6 +56,7 @@ while (<TEMP>) {
 	    [ChineseNumbers->ChineseToEnglishNumber($match_1, "arabic") - 1]
 	    [$match_2 - 1]
 	= $temp_lines[1];
+	$lesson_per_week[ChineseNumbers->ChineseToEnglishNumber($match_1, "arabic") - 1][$match_2 - 1] = $temp_array_element; 
       } else {
 	# 如果班级不是 ？（？） 的格式，就退出
 	$error_message = encode("gb2312",decode("utf8","的格式不正确"));
@@ -222,7 +224,6 @@ for (my $i = 0; $i <= $temp_sum_elements_grades; $i ++){
   }
 }
 
-
 # 测试程序
 my $cur_week;
 my $cur_grade;
@@ -233,6 +234,7 @@ my $in_hdays;
 my $cur_gap;
 my $cur_grade_final;
 my $cur_class_final;
+my $tmp_lesson_per_week_loop;
 
 foreach my $emt_line (@weeks_grades_subjects) {
   @temp_lines = split " ",$emt_line;
@@ -242,15 +244,14 @@ foreach my $emt_line (@weeks_grades_subjects) {
     # print $1 . "\n";
     $cur_week = $base_workweek + ChineseNumbers->ChineseToEnglishNumber($1, "arabic") - 1;
   }
-  # print $cur_week . "\n";
+  # print "cur_week  $cur_week\n";
 
   # 确定年级
   $cur_grade = ChineseNumbers->ChineseToEnglishNumber($temp_lines[2], "arabic") - 1;
   $cur_class_in_week_turn = $temp_lines[1] -1;
-  # print "class turn $cur_class_in_week_turn\n";
-
+  # print "cur_class_in_week_turn $cur_class_in_week_turn\n";
   # print "cur_grade is $cur_grade \n";
-  # print "turn is $cur_class_in_week_turn\n";
+
   # 从 @temp_sum_elements_classes 的结构中可以知道，它就是说明 0-4 个年级中，每个年级有几个班级的
   # 所以，给定年级num ，就是 $temp_sum_elements_classes[num] ，就知道班级数
   # 所以设定一个 $temp_sum_elements_classes[num] 次的循环，跳过空的班级，有的班级，加上年级号，就可以从
@@ -264,52 +265,76 @@ foreach my $emt_line (@weeks_grades_subjects) {
       # 求出初步结果
       $temp_class_day = $class_week[$cur_class_in_week_turn][$cur_grade][$cur_class];
       # print "grade $cur_grade class $cur_class temp_class_day $temp_class_day\n";
-
-      $cur_day = $base_workyear . $cur_week . $temp_class_day;
+	  if ($cur_week < 10) { 
+		$cur_day = $base_workyear . "0" . $cur_week . $temp_class_day; 
+	  } else {
+		$cur_day = $base_workyear . $cur_week . $temp_class_day;
+	  }
       $cur_day = ParseDateString($cur_day);
       $cur_day = UnixDate($cur_day,"%Y%m%d");
+      # print "1st cur_day $cur_day\n";
       # 首先要加上原有的延迟
       # print "all_gap $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]\n";
       $cur_day = DateCalc($cur_day, "+$all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn] days");
       $cur_day =~ s/00:00:00//;
-      # print "cur_day $cur_day\n";
-
+      # print "gap1 cur_day $cur_day\n";
+	  
       # 预设有延迟的标志，强制进入判断是否延迟的循环
       $in_hdays = 1;
       while ($in_hdays) {
-	$in_hdays = 0;
-	foreach my $temp_hday (@holidays) {
-	  if ($cur_day eq $temp_hday) {
-	    $cur_gap = $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn];
-	    # 指向 gap 数组的指针，在小于 class_week 的总数时，都是递增 1
-	    # 但是在等于总数时，要归零。
-	    $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]
-	      = $all_gaps[$cur_grade][$cur_class][$cur_class_in_week_turn]
-	      + $gap_of_week[$cur_grade][$cur_class][$cur_gap][$cur_class_in_week_turn];
-	    $cur_day = DateCalc($cur_day, "+$gap_of_week[$cur_grade][$cur_class][$cur_gap] days");
-	    $cur_day =~ s/00:00:00//;
-	    $in_hdays = 1;
-	    # print "in holiday cur_grade $cur_grade cur_lass $cur_class $cur_day\n";
-	    # print "gap point $cur_gap\n";
-	    # print "all gaps in $all_gaps[$cur_grade][$cur_class]\n";
-	    if ($point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] < $#class_week) {
-	      $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] ++;
-	    } else {
-	      $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn] = 0;
+	    $in_hdays = 0;
+	    foreach my $temp_hday (@holidays) {
+	      if ($cur_day eq $temp_hday) {
+		# if ( $point_2_gap_of_week[$cur_grade][$cur_class][$cur_class_in_week_turn + 1] ) {
+		#   $tmp_cur_class_in_week_turn = $cur_class_in_week_turn +1;
+		# } else {
+		#   $tmp_cur_class_in_week_turn = 0;
+		# }
+		$tmp_lesson_per_week_loop = 0;
+		while ( $tmp_lesson_per_week_loop <= $lesson_per_week[$cur_grade][$cur_class] ) {
+		  $cur_gap = $point_2_gap_of_week[$cur_grade][$cur_class][$tmp_lesson_per_week_loop];
+		  # print "tmp_lesson_per_week_loop $tmp_lesson_per_week_loop\n";
+		  # print "cur_gap $cur_gap\n";
+		  # 指向 gap 数组的指针，在小于 class_week 的总数时，都是递增 1
+		  # 但是在等于总数时，要归零。
+		  # all_gap 数组中，一个班级的一周的所有的课，都得添加间隔。用循环来完成。
+		  # print "all_gaps_1 $all_gaps[$cur_grade][$cur_class][tmp_lesson_per_week_loop]\n";
+
+		  $all_gaps[$cur_grade][$cur_class][$tmp_lesson_per_week_loop]
+	          = $all_gaps[$cur_grade][$cur_class][$tmp_lesson_per_week_loop]
+	          + $gap_of_week[$cur_grade][$cur_class][$cur_gap];
+  		  # print "gap_of_week  $gap_of_week[$cur_grade][$cur_class][$cur_gap]\n";
+		  # print "all_gaps $all_gaps[$cur_grade][$cur_class][tmp_lesson_per_week_loop]\n";
+
+		  if ( $tmp_lesson_per_week_loop == $cur_class_in_week_turn ) {
+		    $cur_day = DateCalc($cur_day, "+$gap_of_week[$cur_grade][$cur_class][$cur_gap] days");
+		    $cur_day =~ s/00:00:00//;
+		    $in_hdays = 1;
+		    # print "in_hdays 1 cur_day $cur_day\n";
+		  }
+		  if ($point_2_gap_of_week[$cur_grade][$cur_class][$tmp_lesson_per_week_loop] < $#class_week) {
+		    $point_2_gap_of_week[$cur_grade][$cur_class][$tmp_lesson_per_week_loop] ++;
+		  } else {
+		    $point_2_gap_of_week[$cur_grade][$cur_class][$tmp_lesson_per_week_loop] = 0;
+		  }
+
+		  $tmp_lesson_per_week_loop ++;
+		}
+	      }
 	    }
-	  }
-	}
       }
+
+
       # 最后看看是不是交换上课日期的情况
       if (exists $exchange_holidays{$cur_day}) {
-	$cur_day = $exchange_holidays{$cur_day};
+	    $cur_day = $exchange_holidays{$cur_day};
       }
-    $cur_grade_final = ChineseNumbers->EnglishToChineseNumber($cur_grade + 1, "simp");
-    $cur_class_final = $cur_class +1;
-    #现在可以打印日期 班级 教师 课题 效果 损坏
-    push @temp_array_1, "$cur_day    $cur_grade_final（$cur_class_final）    $class_teachers[$cur_grade][$cur_class]    $temp_lines[3]    好    无"; 
-
+      $cur_grade_final = ChineseNumbers->EnglishToChineseNumber($cur_grade + 1, "simp");
+      $cur_class_final = $cur_class +1;
+      #现在可以打印日期 班级 教师 课题 效果 损坏
+      push @temp_array_1, "$cur_day    $cur_grade_final（$cur_class_final）    $class_teachers[$cur_grade][$cur_class]    $temp_lines[3]    好    无"; 
     }
+    # print "in_hday cur_day $cur_day    $cur_grade_final（$cur_class_final）    $class_teachers[$cur_grade][$cur_class]    $temp_lines[3] \n";
     $cur_class ++;
 
   }
